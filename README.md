@@ -1,6 +1,6 @@
 # Vibe Coders Map
 
-Vibe Coders Map is a live map of developers using AI coding tools such as Cursor, Claude Code, Windsurf, GitHub Copilot, Aider, Zed, Cline, Roo Code, Continue, and JetBrains AI.
+Vibe Coders Map is a live map of developers using AI coding tools such as Aider, Antigravity, Claude Code, Cline, Codex, Continue, Cursor, and Zed.
 
 The project combines a lightweight desktop agent, a Cloudflare-powered API, and a Next.js map UI to show real-time activity at both country and admin-1 level.
 
@@ -10,6 +10,17 @@ The project combines a lightweight desktop agent, a Cloudflare-powered API, and 
 - Sends anonymous heartbeats from the desktop app at a fixed interval
 - Aggregates live activity in Cloudflare D1 and KV
 - Renders a global MapLibre view with live clusters, stats, filters, and choropleth overlays
+
+## Supported tools
+
+- `aider`
+- `antigravity`
+- `claude_code`
+- `cline`
+- `codex`
+- `continue`
+- `cursor`
+- `zed`
 
 ## Monorepo structure
 
@@ -158,8 +169,7 @@ VIBE_API_URL=https://your-api.example.com
 
 ## Known limitations
 
-- Production deploys still require you to create and scope a Cloudflare API token manually.
-- `apps/api/wrangler.toml` intentionally keeps placeholder resource IDs so the repo stays fork-friendly and safe to publish.
+- Cannot detect Claude Code reliably in all environments.
 
 ## Privacy
 
