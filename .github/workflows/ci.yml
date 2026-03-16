@@ -16,4 +16,4 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npx turbo run type-check lint
+      - run: npx turbo run type-check lint test

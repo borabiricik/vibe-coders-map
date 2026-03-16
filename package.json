@@ -9,6 +9,8 @@
     "dev:api": "turbo run dev --filter=@vibe/api",
     "dev:web": "turbo run dev --filter=@vibe/web",
     "build": "turbo run build",
+    "test": "turbo run test",
+    "test:local": "npm --workspace @vibe/api run test:local",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check"
   },

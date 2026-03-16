@@ -1,14 +1,28 @@
 "use client";
 
-import { useTopojsonGeo } from "./use-topojson-geo";
+import { useQuery } from "@tanstack/react-query";
+import type { FeatureCollection, Geometry } from "geojson";
 
-const WORLD_ATLAS_URL =
-  "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json";
+const COUNTRIES_GEOJSON_URL = "/geo/countries.geojson";
 
 export function useCountryGeo() {
-  return useTopojsonGeo({
-    queryKey: ["geo", "countries"],
-    url: WORLD_ATLAS_URL,
-    objectName: "countries",
+  const { data } = useQuery({
+    queryKey: ["geo", "countries", COUNTRIES_GEOJSON_URL],
+    staleTime: Infinity,
+    gcTime: Infinity,
+    queryFn: async ({ signal }) => {
+      const response = await fetch(COUNTRIES_GEOJSON_URL, {
+        signal,
+        cache: "force-cache",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch countries GeoJSON: ${response.status}`);
+      }
+
+      return (await response.json()) as FeatureCollection<Geometry>;
+    },
   });
+
+  return data ?? null;
 }

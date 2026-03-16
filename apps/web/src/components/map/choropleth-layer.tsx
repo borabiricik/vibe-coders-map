@@ -29,7 +29,7 @@ export function ChoroplethLayer({ labelLayerId }: Props) {
           id="country-choropleth"
           type="geojson"
           data={countryBoundaries}
-          tolerance={0.15}
+          tolerance={0}
         >
           <Layer
             id="country-fills"

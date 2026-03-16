@@ -6,12 +6,12 @@ import { TOOL_COLORS } from "@vibe/shared-types";
 import type { ToolId, RegionData } from "@vibe/shared-types";
 import { fetchChoropleth } from "@/lib/api";
 import { useMapStore } from "@/hooks/use-map-viewport";
-import { NUMERIC_TO_ALPHA2 } from "@/lib/country-codes";
 
-const ALPHA2_TO_NUMERIC: Record<string, string> = {};
-for (const [num, alpha2] of Object.entries(NUMERIC_TO_ALPHA2)) {
-  ALPHA2_TO_NUMERIC[alpha2] = String(Number(num));
-}
+const COUNTRY_CODE_EXPRESSION: unknown[] = [
+  "coalesce",
+  ["get", "ISO_A2_EH"],
+  ["get", "ISO_A2"],
+];
 
 function hexToRgba(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -61,13 +61,10 @@ export function useChoropleth() {
   const countryFillColor = useMemo((): unknown => {
     const entries = Object.entries(countries);
     if (entries.length === 0) return "transparent";
-    const expr: unknown[] = ["match", ["to-string", ["id"]]];
+    const expr: unknown[] = ["match", COUNTRY_CODE_EXPRESSION];
     for (const [alpha2, rd] of entries) {
-      const numId = ALPHA2_TO_NUMERIC[alpha2];
-      if (numId) {
-        const color = TOOL_COLORS[rd.dominantTool];
-        expr.push(numId, hexToRgba(color, opacityFromCount(rd.count)));
-      }
+      const color = TOOL_COLORS[rd.dominantTool];
+      expr.push(alpha2, hexToRgba(color, opacityFromCount(rd.count)));
     }
     expr.push("transparent");
     return expr;
@@ -88,12 +85,9 @@ export function useChoropleth() {
   const countryLineColor = useMemo((): unknown => {
     const entries = Object.entries(countries);
     if (entries.length === 0) return "transparent";
-    const expr: unknown[] = ["match", ["to-string", ["id"]]];
+    const expr: unknown[] = ["match", COUNTRY_CODE_EXPRESSION];
     for (const [alpha2, rd] of entries) {
-      const numId = ALPHA2_TO_NUMERIC[alpha2];
-      if (numId) {
-        expr.push(numId, TOOL_COLORS[rd.dominantTool]);
-      }
+      expr.push(alpha2, TOOL_COLORS[rd.dominantTool]);
     }
     expr.push("transparent");
     return expr;

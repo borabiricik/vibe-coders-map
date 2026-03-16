@@ -12,6 +12,7 @@
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-autostart": "^2",
     "@tauri-apps/plugin-notification": "^2",
+    "@vibe/shared-types": "*",
     "react": "^19",
     "react-dom": "^19"
   },

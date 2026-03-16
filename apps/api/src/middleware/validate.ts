@@ -37,5 +37,6 @@ export async function validateHeartbeat(c: Context, next: Next) {
 
   c.set("anonId", anon_id);
   c.set("validTools", [...new Set(validTools)]);
+  c.set("heartbeatBody", body as Record<string, unknown>);
   await next();
 }

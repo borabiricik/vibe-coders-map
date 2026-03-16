@@ -2,7 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { fetchStats } from "@/lib/api";
-import { TOOL_LABELS, TOOL_COLORS, type ToolId } from "@vibe/shared-types";
+import { getToolBranding } from "@vibe/shared-types";
+import { ToolLogoBadge } from "./tool-logo-badge";
 
 export function GlobalStats() {
   const { data, isLoading } = useQuery({
@@ -45,22 +46,23 @@ export function GlobalStats() {
 
       {topTools.length > 0 && (
         <div className="mt-3 space-y-1.5">
-          {topTools.map(([tool, count]) => (
-            <div key={tool} className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <span
-                  className="inline-block h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: TOOL_COLORS[tool as ToolId] || "#6B7280" }}
-                />
-                <span className="text-gray-300">
-                  {TOOL_LABELS[tool as ToolId] || tool}
+          {topTools.map(([tool, count]) => {
+            const { label, color } = getToolBranding(tool);
+
+            return (
+              <div key={tool} className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <ToolLogoBadge tool={tool} size="md" />
+                  <span className="text-gray-300" style={{ color }}>
+                    {label}
+                  </span>
+                </div>
+                <span className="font-medium tabular-nums text-gray-400">
+                  {(count ?? 0).toLocaleString()}
                 </span>
               </div>
-              <span className="font-medium tabular-nums text-gray-400">
-                {(count ?? 0).toLocaleString()}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

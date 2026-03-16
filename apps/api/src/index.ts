@@ -14,7 +14,7 @@ app.use(
   cors({
     origin: ["https://vibecodersmap.com", "http://localhost:3000"],
     allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: ["Content-Type"],
+    allowHeaders: ["Content-Type", "X-Test-Geo"],
     maxAge: 86400,
   }),
 );
