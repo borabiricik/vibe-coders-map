@@ -49,6 +49,7 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VIBE_API_URL: ${{ vars.DESKTOP_API_URL || vars.NEXT_PUBLIC_API_URL }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Vibe Coders Map ${{ github.ref_name }}"

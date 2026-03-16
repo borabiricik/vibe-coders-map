@@ -7,8 +7,8 @@
     "deploy": "wrangler deploy",
     "type-check": "tsc --noEmit",
     "lint": "eslint src/",
-    "db:migrate:local": "wrangler d1 execute vibe-coders-db --local --file=./migrations/0001_initial.sql",
-    "db:migrate:remote": "wrangler d1 execute vibe-coders-db --remote --file=./migrations/0001_initial.sql"
+    "db:migrate:local": "wrangler d1 migrations apply vibe-coders-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply vibe-coders-db --remote"
   },
   "dependencies": {
     "h3-js": "^4.4.0",

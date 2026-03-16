@@ -5,11 +5,11 @@ compatibility_date = "2026-03-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "vibe-coders-db"
-database_id = "placeholder-replace-after-create"
+database_id = "placeholder-d1-database-id"
 
 [[kv_namespaces]]
 binding = "KV"
-id = "placeholder-replace-after-create"
+id = "placeholder-kv-namespace-id"
 
 [triggers]
 crons = ["* * * * *"]

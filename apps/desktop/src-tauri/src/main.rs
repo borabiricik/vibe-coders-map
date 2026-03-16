@@ -4,7 +4,12 @@ use std::collections::HashSet;
 use sysinfo::{ProcessesToUpdate, System};
 use tauri::Manager;
 
-const API_URL: &str = "http://localhost:8787";
+fn api_url() -> &'static str {
+    match option_env!("VIBE_API_URL") {
+        Some(url) if !url.is_empty() => url,
+        _ => "http://localhost:8787",
+    }
+}
 
 #[tauri::command]
 fn detect_tools() -> Vec<String> {
@@ -58,7 +63,7 @@ async fn send_heartbeat(anon_id: String, tools: Vec<String>) -> Result<bool, Str
     });
 
     match client
-        .post(format!("{}/api/v1/heartbeat", API_URL))
+        .post(format!("{}/api/v1/heartbeat", api_url()))
         .json(&payload)
         .send()
         .await

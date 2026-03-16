@@ -42,7 +42,6 @@ check_cmd() {
 log "Checking prerequisites..."
 check_cmd node    "https://nodejs.org"
 check_cmd npm     "comes with Node.js"
-check_cmd wrangler "npm install -g wrangler"
 check_cmd cargo   "https://rustup.rs"
 
 NODE_VER=$(node -v | sed 's/v//' | cut -d. -f1)
@@ -60,23 +59,23 @@ else
   ok "Dependencies already installed"
 fi
 
-# ── D1 local migration ───────────────────────────────────────────────────────
-MIGRATION="$ROOT/apps/api/migrations/0001_initial.sql"
-D1_LOCAL_DIR="$ROOT/apps/api/.wrangler/state/v3/d1"
-
-if [ ! -d "$D1_LOCAL_DIR" ]; then
-  log "Running D1 local migration..."
-  cd "$ROOT/apps/api"
-  npx wrangler d1 execute vibe-coders-db --local --file="$MIGRATION" 2>&1 | grep -v "^$" || true
-  cd "$ROOT"
-  ok "D1 migration applied"
-else
-  ok "D1 local database already exists"
+if ! npx wrangler --version >/dev/null 2>&1; then
+  err "Wrangler is not available via local dependencies."
+  echo "    Run: npm install"
+  exit 1
 fi
+ok "Wrangler available via npx"
+
+# ── D1 local migration ───────────────────────────────────────────────────────
+log "Applying local D1 migrations..."
+cd "$ROOT/apps/api"
+printf 'y\n' | npx wrangler d1 migrations apply vibe-coders-db --local >/dev/null
+cd "$ROOT"
+ok "Local D1 migrations applied"
 
 # ── Wrangler config check ────────────────────────────────────────────────────
 WRANGLER_TOML="$ROOT/apps/api/wrangler.toml"
-if grep -q "placeholder-replace-after-create" "$WRANGLER_TOML"; then
+if grep -q "placeholder-" "$WRANGLER_TOML"; then
   warn "wrangler.toml still has placeholder IDs."
   warn "Local dev will work with --local flag (no real Cloudflare account needed)."
 fi
@@ -142,7 +141,8 @@ ok "Next.js running (pid $WEB_PID)"
 log "Starting Tauri desktop app..."
 log "(Rust binary already compiled, window should open shortly)"
 cd "$ROOT/apps/desktop"
-npx tauri dev \
+VIBE_API_URL="http://localhost:8787" \
+  npx tauri dev \
   > "$LOG_DIR/desktop.log" 2>&1 &
 PIDS+=($!)
 DESKTOP_PID=$!
