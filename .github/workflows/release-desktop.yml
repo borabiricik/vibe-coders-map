@@ -35,11 +35,19 @@ jobs:
 
       - run: npm ci
 
+      - name: Write production env file
+        shell: bash
+        run: |
+          if [ -z "${{ secrets.DESKTOP_ENV_PRODUCTION }}" ]; then
+            echo "Missing DESKTOP_ENV_PRODUCTION secret"
+            exit 1
+          fi
+          printf '%s\n' "${{ secrets.DESKTOP_ENV_PRODUCTION }}" > apps/desktop/.env.production
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VIBE_API_URL: https://vibe-coders-map-api.borabiriciksoftware.workers.dev/
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Vibe Coders Map ${{ github.ref_name }}"

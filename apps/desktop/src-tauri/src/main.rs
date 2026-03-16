@@ -15,10 +15,9 @@ const TRAY_OPEN_ID: &str = "tray_open";
 const TRAY_QUIT_ID: &str = "tray_quit";
 
 fn api_url() -> &'static str {
-    match option_env!("VIBE_API_URL") {
-        Some(url) if !url.is_empty() => url,
-        _ => "http://localhost:8787",
-    }
+    option_env!("VIBE_API_URL")
+        .filter(|url| !url.is_empty())
+        .expect("VIBE_API_URL should be injected from desktop env files during build")
 }
 
 #[tauri::command]

@@ -115,7 +115,7 @@ describe("pipeline", () => {
     expect(first).toHaveProperty("tools");
   });
 
-  it("rate limits duplicate heartbeat writes for the same user", async () => {
+  it("rate limits heartbeat writes after 10 requests per minute for the same user", async () => {
     const anonId = randomUUID();
     const payload = {
       anon_id: anonId,
@@ -127,7 +127,20 @@ describe("pipeline", () => {
       region_code: "TR-34",
     };
 
-    const first = await SELF.fetch("https://example.com/api/v1/heartbeat", {
+    for (let i = 0; i < 10; i++) {
+      const res = await SELF.fetch("https://example.com/api/v1/heartbeat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Test-Geo": "1",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      expect(res.status).toBe(204);
+    }
+
+    const limited = await SELF.fetch("https://example.com/api/v1/heartbeat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -136,23 +149,11 @@ describe("pipeline", () => {
       body: JSON.stringify(payload),
     });
 
-    expect(first.status).toBe(204);
+    expect(limited.status).toBe(429);
+    expect(limited.headers.get("Retry-After")).toBe("60");
 
-    const second = await SELF.fetch("https://example.com/api/v1/heartbeat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Test-Geo": "1",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    expect(second.status).toBe(429);
-    expect(second.headers.get("Retry-After")).toBeTruthy();
-
-    const error = await second.json<{ error: string; retry_after_seconds: number }>();
-    expect(error.error).toBe("Write rate limit exceeded");
-    expect(error.retry_after_seconds).toBeGreaterThan(0);
-    expect(error.retry_after_seconds).toBeLessThanOrEqual(300);
+    const error = await limited.json<{ error: string; retry_after_seconds: number }>();
+    expect(error.error).toBe("Heartbeat rate limit exceeded");
+    expect(error.retry_after_seconds).toBe(60);
   });
 });

@@ -1,6 +1,7 @@
 export interface Env {
   DB: D1Database;
   KV: KVNamespace;
+  HEARTBEAT_RATE_LIMITER: RateLimit;
 }
 
 export interface HeartbeatRow {

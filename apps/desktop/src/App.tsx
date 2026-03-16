@@ -8,8 +8,8 @@ import { Toggle } from "./components/Toggle";
 
 const DETECTION_INTERVAL = 3 * 1000;
 const HEARTBEAT_INTERVAL = 5 * 60 * 1000;
-const HEARTBEAT_POLL_INTERVAL = 30 * 1000;
 const ANON_ID_KEY = "vibe_anon_id";
+const LAST_HEARTBEAT_ATTEMPT_AT_KEY = "vibe_last_heartbeat_attempt_at";
 const IS_MAC = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 const HEADER_INTERACTIVE_SELECTOR =
   "button, a, input, select, textarea, summary, [role='button'], [data-no-drag='true']";
@@ -34,6 +34,14 @@ function getOrCreateAnonId(): string {
   return id;
 }
 
+function getStoredHeartbeatAttemptAt(): number | null {
+  const stored = localStorage.getItem(LAST_HEARTBEAT_ATTEMPT_AT_KEY);
+  if (!stored) return null;
+
+  const parsed = Number(stored);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 type ConnectionStatus = "connected" | "disconnected" | "sending";
 
 export default function App() {
@@ -46,10 +54,8 @@ export default function App() {
   const [autoStartError, setAutoStartError] = useState<string | null>(null);
   const anonId = useRef(getOrCreateAnonId());
   const detectIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
-    null,
-  );
-  const lastHeartbeatAtRef = useRef<number | null>(null);
+  const heartbeatTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastHeartbeatAttemptAtRef = useRef<number | null>(getStoredHeartbeatAttemptAt());
   const toolsRef = useRef<ToolId[]>([]);
 
   const detectTools = useCallback(async () => {
@@ -69,11 +75,8 @@ export default function App() {
     if (toolsRef.current.length === 0) return;
 
     const now = Date.now();
-    const lastHeartbeatAt = lastHeartbeatAtRef.current;
-
-    if (lastHeartbeatAt !== null && now - lastHeartbeatAt < HEARTBEAT_INTERVAL) {
-      return;
-    }
+    lastHeartbeatAttemptAtRef.current = now;
+    localStorage.setItem(LAST_HEARTBEAT_ATTEMPT_AT_KEY, now.toString());
 
     setStatus("sending");
     try {
@@ -83,13 +86,36 @@ export default function App() {
       });
       setStatus(ok ? "connected" : "disconnected");
       if (ok) {
-        lastHeartbeatAtRef.current = now;
         setLastHeartbeat(new Date(now));
       }
     } catch {
       setStatus("disconnected");
     }
   }, []);
+
+  const clearHeartbeatTimeout = useCallback(() => {
+    if (heartbeatTimeoutRef.current) {
+      clearTimeout(heartbeatTimeoutRef.current);
+      heartbeatTimeoutRef.current = null;
+    }
+  }, []);
+
+  const scheduleHeartbeat = useCallback(() => {
+    clearHeartbeatTimeout();
+
+    if (toolsRef.current.length === 0) return;
+
+    const lastAttemptAt = lastHeartbeatAttemptAtRef.current;
+    const delay = lastAttemptAt === null
+      ? 0
+      : Math.max(HEARTBEAT_INTERVAL - (Date.now() - lastAttemptAt), 0);
+
+    heartbeatTimeoutRef.current = setTimeout(() => {
+      void sendHeartbeat().finally(() => {
+        scheduleHeartbeat();
+      });
+    }, delay);
+  }, [clearHeartbeatTimeout, sendHeartbeat]);
 
   useEffect(() => {
     toolsRef.current = tools;
@@ -104,19 +130,10 @@ export default function App() {
   }, [detectTools]);
 
   useEffect(() => {
-    void sendHeartbeat();
-    heartbeatIntervalRef.current = setInterval(() => {
-      void sendHeartbeat();
-    }, HEARTBEAT_POLL_INTERVAL);
-    return () => {
-      if (heartbeatIntervalRef.current)
-        clearInterval(heartbeatIntervalRef.current);
-    };
-  }, [sendHeartbeat]);
+    scheduleHeartbeat();
+  }, [scheduleHeartbeat, tools]);
 
-  useEffect(() => {
-    void sendHeartbeat();
-  }, [tools, sendHeartbeat]);
+  useEffect(() => clearHeartbeatTimeout, [clearHeartbeatTimeout]);
 
   useEffect(() => {
     isEnabled()
