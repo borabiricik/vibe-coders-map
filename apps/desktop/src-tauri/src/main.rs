@@ -2,7 +2,17 @@
 
 use std::collections::HashSet;
 use sysinfo::{ProcessesToUpdate, System};
-use tauri::Manager;
+use tauri::{
+    image::Image,
+    menu::{Menu, MenuItem, PredefinedMenuItem},
+    tray::{MouseButton, TrayIconEvent},
+    ActivationPolicy, Manager, WindowEvent,
+};
+
+const MAIN_WINDOW_LABEL: &str = "main";
+const TRAY_ID: &str = "main";
+const TRAY_OPEN_ID: &str = "tray_open";
+const TRAY_QUIT_ID: &str = "tray_quit";
 
 fn api_url() -> &'static str {
     match option_env!("VIBE_API_URL") {
@@ -36,14 +46,17 @@ fn detect_tools() -> Vec<String> {
         if name.contains("aider") {
             detected.insert("aider".to_string());
         }
-        if ["idea", "webstorm", "pycharm", "goland", "rustrover", "clion"]
-            .iter()
-            .any(|ide| name.contains(ide))
-        {
-            detected.insert("jetbrains_ai".to_string());
+        if name.contains("antigravity") {
+            detected.insert("antigravity".to_string());
         }
-        if name == "code" || name.contains("code helper") {
-            detected.insert("copilot".to_string());
+        if name.contains("cline") {
+            detected.insert("cline".to_string());
+        }
+        if name.contains("continue") {
+            detected.insert("continue".to_string());
+        }
+        if name == "codex" || name.contains("codex") {
+            detected.insert("codex".to_string());
         }
     }
 
@@ -73,6 +86,14 @@ async fn send_heartbeat(anon_id: String, tools: Vec<String>) -> Result<bool, Str
     }
 }
 
+fn show_main_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
+    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_autostart::init(
@@ -81,8 +102,68 @@ fn main() {
         ))
         .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![detect_tools, send_heartbeat])
+        .on_window_event(|window, event| {
+            if window.label() != MAIN_WINDOW_LABEL {
+                return;
+            }
+
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.hide();
+            }
+        })
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            TRAY_OPEN_ID => show_main_window(app),
+            TRAY_QUIT_ID => app.exit(0),
+            _ => {}
+        })
+        .on_tray_icon_event(|app, event| {
+            if let TrayIconEvent::Click {
+                id,
+                button: MouseButton::Left,
+                ..
+            } = event
+            {
+                if id.as_ref() == TRAY_ID {
+                    show_main_window(app);
+                }
+            }
+        })
         .setup(|app| {
-            let _window = app.get_webview_window("main").unwrap();
+            #[cfg(target_os = "macos")]
+            {
+                let _ = app.set_activation_policy(ActivationPolicy::Accessory);
+                let _ = app.set_dock_visibility(false);
+            }
+
+            let open_item = MenuItem::with_id(app, TRAY_OPEN_ID, "Open Vibe Coders Map", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, TRAY_QUIT_ID, "Quit", true, Some("CmdOrCtrl+Q"))?;
+            let tray_menu = Menu::with_items(
+                app,
+                &[
+                    &open_item,
+                    &PredefinedMenuItem::separator(app)?,
+                    &quit_item,
+                ],
+            )?;
+
+            let tray = app
+                .tray_by_id(TRAY_ID)
+                .ok_or_else(|| tauri::Error::AssetNotFound("main tray icon".into()))?;
+
+            tray.set_menu(Some(tray_menu))?;
+            tray.set_show_menu_on_left_click(false)?;
+
+            if let Some(icon) = app.default_window_icon() {
+                tray.set_icon(Some(Image::clone(icon)))?;
+            }
+
+            #[cfg(target_os = "macos")]
+            {
+                tray.set_icon_as_template(true)?;
+            }
+
+            let _window = app.get_webview_window(MAIN_WINDOW_LABEL).unwrap();
             Ok(())
         })
         .run(tauri::generate_context!())
