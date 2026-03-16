@@ -3,6 +3,30 @@ import { describe, expect, it, beforeAll } from "vitest";
 import { KNOWN_TOOLS } from "@vibe/shared-types";
 import SEED_LOCATIONS from "./seed-locations.json";
 
+interface StatsResponse {
+  total_active: number;
+  by_tool: Record<string, number>;
+  by_country: Record<string, number>;
+  last_updated: number;
+}
+
+interface ChoroplethResponse {
+  countries: Record<string, { count: number; dominantTool: string }>;
+  regions: Record<string, { count: number; dominantTool: string }>;
+  last_updated: number;
+}
+
+interface ClustersResponse {
+  clusters: Array<{
+    lat: number;
+    lng: number;
+    count: number;
+    tools: string[];
+  }>;
+  total_active: number;
+  last_updated: number;
+}
+
 function randomUUID(): string {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
@@ -39,7 +63,7 @@ describe("pipeline", () => {
   it("stats returns correct total and structure", async () => {
     const res = await SELF.fetch("https://example.com/api/v1/stats");
     expect(res.status).toBe(200);
-    const data = await res.json();
+    const data = await res.json() as StatsResponse;
     expect(data).toHaveProperty("total_active");
     expect(data).toHaveProperty("by_tool");
     expect(data).toHaveProperty("by_country");
@@ -58,7 +82,7 @@ describe("pipeline", () => {
   it("choropleth returns countries and regions", async () => {
     const res = await SELF.fetch("https://example.com/api/v1/choropleth");
     expect(res.status).toBe(200);
-    const data = await res.json();
+    const data = await res.json() as ChoroplethResponse;
     expect(data).toHaveProperty("countries");
     expect(data).toHaveProperty("regions");
     expect(data).toHaveProperty("last_updated");
@@ -77,7 +101,7 @@ describe("pipeline", () => {
   it("clusters returns clusters and total_active", async () => {
     const res = await SELF.fetch("https://example.com/api/v1/clusters?zoom=3");
     expect(res.status).toBe(200);
-    const data = await res.json();
+    const data = await res.json() as ClustersResponse;
     expect(data).toHaveProperty("clusters");
     expect(data).toHaveProperty("total_active");
     expect(data).toHaveProperty("last_updated");
@@ -89,5 +113,46 @@ describe("pipeline", () => {
     expect(first).toHaveProperty("lng");
     expect(first).toHaveProperty("count");
     expect(first).toHaveProperty("tools");
+  });
+
+  it("rate limits duplicate heartbeat writes for the same user", async () => {
+    const anonId = randomUUID();
+    const payload = {
+      anon_id: anonId,
+      tools: [KNOWN_TOOLS[0]],
+      lat: 41.01,
+      lng: 28.97,
+      city: "Istanbul",
+      country: "TR",
+      region_code: "TR-34",
+    };
+
+    const first = await SELF.fetch("https://example.com/api/v1/heartbeat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Test-Geo": "1",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    expect(first.status).toBe(204);
+
+    const second = await SELF.fetch("https://example.com/api/v1/heartbeat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Test-Geo": "1",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    expect(second.status).toBe(429);
+    expect(second.headers.get("Retry-After")).toBeTruthy();
+
+    const error = await second.json<{ error: string; retry_after_seconds: number }>();
+    expect(error.error).toBe("Write rate limit exceeded");
+    expect(error.retry_after_seconds).toBeGreaterThan(0);
+    expect(error.retry_after_seconds).toBeLessThanOrEqual(300);
   });
 });

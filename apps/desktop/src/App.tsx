@@ -8,6 +8,7 @@ import { Toggle } from "./components/Toggle";
 
 const DETECTION_INTERVAL = 3 * 1000;
 const HEARTBEAT_INTERVAL = 5 * 60 * 1000;
+const HEARTBEAT_POLL_INTERVAL = 30 * 1000;
 const ANON_ID_KEY = "vibe_anon_id";
 const IS_MAC = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 const HEADER_INTERACTIVE_SELECTOR =
@@ -48,6 +49,7 @@ export default function App() {
   const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
     null,
   );
+  const lastHeartbeatAtRef = useRef<number | null>(null);
   const toolsRef = useRef<ToolId[]>([]);
 
   const detectTools = useCallback(async () => {
@@ -65,6 +67,14 @@ export default function App() {
 
   const sendHeartbeat = useCallback(async () => {
     if (toolsRef.current.length === 0) return;
+
+    const now = Date.now();
+    const lastHeartbeatAt = lastHeartbeatAtRef.current;
+
+    if (lastHeartbeatAt !== null && now - lastHeartbeatAt < HEARTBEAT_INTERVAL) {
+      return;
+    }
+
     setStatus("sending");
     try {
       const ok = await invoke<boolean>("send_heartbeat", {
@@ -72,7 +82,10 @@ export default function App() {
         tools: toolsRef.current,
       });
       setStatus(ok ? "connected" : "disconnected");
-      if (ok) setLastHeartbeat(new Date());
+      if (ok) {
+        lastHeartbeatAtRef.current = now;
+        setLastHeartbeat(new Date(now));
+      }
     } catch {
       setStatus("disconnected");
     }
@@ -91,8 +104,10 @@ export default function App() {
   }, [detectTools]);
 
   useEffect(() => {
-    sendHeartbeat();
-    heartbeatIntervalRef.current = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+    void sendHeartbeat();
+    heartbeatIntervalRef.current = setInterval(() => {
+      void sendHeartbeat();
+    }, HEARTBEAT_POLL_INTERVAL);
     return () => {
       if (heartbeatIntervalRef.current)
         clearInterval(heartbeatIntervalRef.current);
@@ -100,7 +115,7 @@ export default function App() {
   }, [sendHeartbeat]);
 
   useEffect(() => {
-    sendHeartbeat();
+    void sendHeartbeat();
   }, [tools, sendHeartbeat]);
 
   useEffect(() => {
