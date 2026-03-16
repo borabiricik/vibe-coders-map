@@ -1,0 +1,24 @@
+{
+  "name": "@vibe/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src/",
+    "db:migrate:local": "wrangler d1 execute vibe-coders-db --local --file=./migrations/0001_initial.sql",
+    "db:migrate:remote": "wrangler d1 execute vibe-coders-db --remote --file=./migrations/0001_initial.sql"
+  },
+  "dependencies": {
+    "h3-js": "^4.4.0",
+    "hono": "^4",
+    "ngeohash": "^0.6"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4",
+    "@vibe/shared-types": "*",
+    "typescript": "^5.7",
+    "wrangler": "^3"
+  }
+}

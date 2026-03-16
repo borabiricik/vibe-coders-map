@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cursor: #8B5CF6;
+  --color-windsurf: #14B8A6;
+  --color-claude: #F97316;
+  --color-copilot: #3B82F6;
+  --color-aider: #EF4444;
+  --color-zed: #A3E635;
+  --color-jetbrains: #EC4899;
+  --color-cline: #6366F1;
+  --color-roo: #06B6D4;
+  --color-continue: #F59E0B;
+}
+
+.maplibregl-ctrl-bottom-left,
+.maplibregl-ctrl-bottom-right {
+  display: none;
+}
