@@ -11,8 +11,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CF_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,6 +20,55 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+
+      - name: Resolve accessible Cloudflare account
+        env:
+          CONFIGURED_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.request
+
+          token = os.environ.get("CLOUDFLARE_API_TOKEN", "")
+          if not token:
+              raise SystemExit("Missing CLOUDFLARE_API_TOKEN secret.")
+
+          request = urllib.request.Request(
+              "https://api.cloudflare.com/client/v4/accounts",
+              headers={
+                  "Authorization": f"Bearer {token}",
+                  "Content-Type": "application/json",
+              },
+          )
+
+          try:
+              with urllib.request.urlopen(request) as response:
+                  payload = json.load(response)
+          except Exception as exc:
+              raise SystemExit(f"Unable to list Cloudflare accounts for this token: {exc}")
+
+          accounts = payload.get("result", [])
+          if not accounts:
+              raise SystemExit(
+                  "This Cloudflare API token cannot access any accounts. Check the token scope."
+              )
+
+          accessible_ids = {account["id"] for account in accounts}
+          configured = os.environ.get("CONFIGURED_ACCOUNT_ID", "")
+
+          if configured and configured not in accessible_ids:
+              names = ", ".join(account.get("name", account["id"]) for account in accounts)
+              raise SystemExit(
+                  "Configured CLOUDFLARE_ACCOUNT_ID is not accessible to this token. "
+                  f"Accessible accounts: {names}"
+              )
+
+          account_id = configured or accounts[0]["id"]
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
+              env_file.write(f"CLOUDFLARE_ACCOUNT_ID={account_id}\n")
+          PY
 
       - name: Inject production Cloudflare bindings
         working-directory: apps/api

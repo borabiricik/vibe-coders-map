@@ -6,7 +6,7 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "type-check": "tsc --noEmit",
-    "lint": "eslint src/",
+    "lint": "eslint src",
     "db:migrate:local": "wrangler d1 migrations apply vibe-coders-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply vibe-coders-db --remote"
   },
@@ -19,6 +19,6 @@
     "@cloudflare/workers-types": "^4",
     "@vibe/shared-types": "*",
     "typescript": "^5.7",
-    "wrangler": "^3"
+    "wrangler": "^4.74.0"
   }
 }

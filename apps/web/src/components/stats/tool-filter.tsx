@@ -1,6 +1,6 @@
 "use client";
 
-import { KNOWN_TOOLS, TOOL_LABELS, TOOL_COLORS, type ToolId } from "@vibe/shared-types";
+import { KNOWN_TOOLS, TOOL_LABELS, TOOL_COLORS } from "@vibe/shared-types";
 import { useMapStore } from "@/hooks/use-map-viewport";
 
 export function ToolFilter() {

@@ -1,7 +1,10 @@
 {
   "name": "vibe-coders-map",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev:api": "turbo run dev --filter=@vibe/api",
     "dev:web": "turbo run dev --filter=@vibe/web",
@@ -10,8 +13,12 @@
     "type-check": "turbo run type-check"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.3",
+    "globals": "^17.4.0",
     "turbo": "^2",
-    "typescript": "^5.7"
+    "typescript": "^5.7",
+    "typescript-eslint": "^8.57.0"
   },
   "packageManager": "npm@10.9.0",
   "engines": {
