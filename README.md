@@ -138,11 +138,8 @@ The repository includes a GitHub Actions workflow that:
 
 The web app expects `NEXT_PUBLIC_API_URL` to point to the deployed API.
 
-Add this GitHub repository variable for the web deployment workflow:
-
-- `NEXT_PUBLIC_API_URL`
-
-The repository includes a workflow for web deployment, and it is also compatible with Vercel-style deployments.
+Web deployment is intentionally not handled by this repository anymore.
+Deploy the web app directly from Vercel and set `NEXT_PUBLIC_API_URL` in your Vercel project settings.
 
 ### Desktop
 
@@ -150,10 +147,14 @@ The repository includes a release workflow for tagged desktop builds.
 
 The desktop agent now supports a configurable build-time API base URL through `VIBE_API_URL`.
 
-For tagged desktop releases, the workflow will use:
+For tagged desktop releases, the workflow writes `apps/desktop/.env.production`
+from the `DESKTOP_ENV_PRODUCTION` GitHub secret before building the app.
 
-- `DESKTOP_API_URL`, if you set it
-- otherwise `NEXT_PUBLIC_API_URL` as the fallback
+Example secret value:
+
+```env
+VIBE_API_URL=https://your-api.example.com
+```
 
 ## Known limitations
 
@@ -179,7 +180,7 @@ The project is already functional as a full-stack prototype with:
 - a live web map
 - stats and choropleth aggregation
 - local development tooling
-- CI and deployment workflows
+- CI, API deployment, and desktop release workflows
 
 ## Contributing
 

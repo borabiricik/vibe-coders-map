@@ -12,7 +12,11 @@ const app = new Hono<{ Bindings: Env }>();
 app.use(
   "/api/*",
   cors({
-    origin: ["https://vibecodersmap.com", "http://localhost:3000"],
+    origin: [
+      "https://vibecodersmap.com",
+      "https://vibe-coders-map-web.vercel.app",
+      "http://localhost:3000",
+    ],
     allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "X-Test-Geo"],
     maxAge: 86400,
