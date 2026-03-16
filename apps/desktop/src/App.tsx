@@ -212,12 +212,12 @@ export default function App() {
           data-tauri-drag-region
           className="pointer-events-none flex items-center gap-3"
         >
-          <div
+          <img
             data-tauri-drag-region
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600 text-sm font-bold"
-          >
-            V
-          </div>
+            src="/logo.png"
+            alt="Vibe Coders Map logo"
+            className="h-16 w-16 shrink-0 object-contain"
+          />
           <h1
             data-tauri-drag-region
             className="text-lg font-semibold tracking-tight"

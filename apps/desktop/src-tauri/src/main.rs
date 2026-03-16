@@ -157,11 +157,6 @@ fn main() {
                 tray.set_icon(Some(Image::clone(icon)))?;
             }
 
-            #[cfg(target_os = "macos")]
-            {
-                tray.set_icon_as_template(true)?;
-            }
-
             let _window = app.get_webview_window(MAIN_WINDOW_LABEL).unwrap();
             Ok(())
         })
