@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - ".github/workflows/deploy-web.yml"
       - "apps/web/**"
       - "packages/shared-types/**"
 

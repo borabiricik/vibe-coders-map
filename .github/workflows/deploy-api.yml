@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - ".github/workflows/deploy-api.yml"
       - "apps/api/**"
       - "packages/shared-types/**"
 
