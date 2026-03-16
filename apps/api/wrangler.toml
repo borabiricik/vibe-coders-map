@@ -12,4 +12,4 @@ binding = "KV"
 id = "placeholder-kv-namespace-id"
 
 [triggers]
-crons = ["* * * * *"]
+crons = ["*/10 * * * *"]
