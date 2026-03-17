@@ -11,6 +11,8 @@ use tauri::{
 };
 use tauri_plugin_log::{RotationStrategy, Target, TargetKind, TimezoneStrategy};
 
+mod native_location;
+
 const MAIN_WINDOW_LABEL: &str = "main";
 const TRAY_ID: &str = "main";
 const TRAY_OPEN_ID: &str = "tray_open";
@@ -31,6 +33,44 @@ fn install_panic_hook() {
     std::panic::set_hook(Box::new(|panic_info| {
         error!(target: "panic", "Unhandled panic: {panic_info}");
     }));
+}
+
+#[tauri::command]
+async fn resolve_device_location() -> Result<Option<native_location::NativeLocation>, String> {
+    info!(target: "location", "Starting native macOS location request");
+
+    let result = tokio::task::spawn_blocking(native_location::resolve_current_location)
+        .await
+        .map_err(|error| {
+            let message = format!("Failed to join native location task: {error}");
+            error!(target: "location", "{message}");
+            message
+        })?;
+
+    match result {
+        Ok(location) => {
+            info!(
+                target: "location",
+                "Resolved device location with {:.0}m horizontal accuracy",
+                location.accuracy
+            );
+            Ok(Some(location))
+        }
+        Err(
+            error @ (native_location::NativeLocationError::PermissionDenied
+            | native_location::NativeLocationError::PermissionRestricted
+            | native_location::NativeLocationError::ServicesDisabled
+            | native_location::NativeLocationError::TimedOut
+            | native_location::NativeLocationError::Unavailable),
+        ) => {
+            warn!(target: "location", "{error}");
+            Ok(None)
+        }
+        Err(error) => {
+            error!(target: "location", "{error}");
+            Err(error.to_string())
+        }
+    }
 }
 
 #[tauri::command]
@@ -138,6 +178,12 @@ async fn send_heartbeat(
 }
 
 fn show_main_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
+    #[cfg(target_os = "macos")]
+    {
+        let _ = app.set_activation_policy(ActivationPolicy::Regular);
+        let _ = app.set_dock_visibility(true);
+    }
+
     if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
         let _ = window.show();
         let _ = window.unminimize();
@@ -145,9 +191,20 @@ fn show_main_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     }
 }
 
+fn hide_main_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
+    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+        let _ = window.hide();
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let _ = app.set_dock_visibility(false);
+        let _ = app.set_activation_policy(ActivationPolicy::Accessory);
+    }
+}
+
 fn main() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_geolocation::init())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(LevelFilter::Info)
@@ -164,7 +221,11 @@ fn main() {
             None,
         ))
         .plugin(tauri_plugin_notification::init())
-        .invoke_handler(tauri::generate_handler![detect_tools, send_heartbeat])
+        .invoke_handler(tauri::generate_handler![
+            detect_tools,
+            resolve_device_location,
+            send_heartbeat
+        ])
         .on_window_event(|window, event| {
             if window.label() != MAIN_WINDOW_LABEL {
                 return;
@@ -172,7 +233,7 @@ fn main() {
 
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
-                let _ = window.hide();
+                hide_main_window(&window.app_handle());
             }
         })
         .on_menu_event(|app, event| match event.id().as_ref() {
@@ -198,8 +259,8 @@ fn main() {
 
             #[cfg(target_os = "macos")]
             {
-                let _ = app.set_activation_policy(ActivationPolicy::Accessory);
-                let _ = app.set_dock_visibility(false);
+                let _ = app.set_activation_policy(ActivationPolicy::Regular);
+                let _ = app.set_dock_visibility(true);
             }
 
             let open_item = MenuItem::with_id(

@@ -148,6 +148,10 @@ export default function App() {
   useEffect(() => clearHeartbeatTimeout, [clearHeartbeatTimeout]);
 
   useEffect(() => {
+    void getHeartbeatLocation();
+  }, []);
+
+  useEffect(() => {
     isEnabled()
       .then((enabled) => {
         setAutoStart(enabled);

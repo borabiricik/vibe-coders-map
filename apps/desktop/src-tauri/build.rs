@@ -30,6 +30,16 @@ fn main() {
 
     println!("cargo:rustc-env={API_URL_KEY}={api_url}");
 
+    if env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
+        println!("cargo:rerun-if-changed=macos/location_bridge.m");
+        cc::Build::new()
+            .file("macos/location_bridge.m")
+            .flag("-fobjc-arc")
+            .compile("vibe_location_bridge");
+        println!("cargo:rustc-link-lib=framework=CoreLocation");
+        println!("cargo:rustc-link-lib=framework=Foundation");
+    }
+
     tauri_build::build()
 }
 

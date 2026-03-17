@@ -1,12 +1,9 @@
-import {
-  checkPermissions,
-  getCurrentPosition,
-  requestPermissions,
-} from "@tauri-apps/plugin-geolocation";
+import { invoke } from "@tauri-apps/api/core";
 import { logFrontendError, logFrontendInfo } from "./logging";
 
-const LOCATION_CACHE_KEY = "vibe_location_cache_v1";
-const LOCATION_FAILURE_AT_KEY = "vibe_location_failure_at";
+const LOCATION_STORAGE_VERSION = "v2";
+const LOCATION_CACHE_KEY = `vibe_location_cache_${LOCATION_STORAGE_VERSION}`;
+const LOCATION_FAILURE_AT_KEY = `vibe_location_failure_at_${LOCATION_STORAGE_VERSION}`;
 const LOCATION_TTL_MS = 60 * 60 * 1000;
 const LOCATION_RETRY_AFTER_FAILURE_MS = 15 * 60 * 1000;
 
@@ -16,15 +13,11 @@ export interface HeartbeatLocation {
   capturedAt: number;
 }
 
-type GeolocationPermissionState =
-  | "granted"
-  | "denied"
-  | "prompt"
-  | "prompt-with-rationale"
-  | "prompt-with-rationale-required";
-
-interface GeolocationPermissionsResponse {
-  location: GeolocationPermissionState;
+interface NativeHeartbeatLocation {
+  lat: number;
+  lng: number;
+  accuracy: number;
+  capturedAt: number;
 }
 
 function roundCoordinate(value: number): number {
@@ -90,34 +83,21 @@ export async function getHeartbeatLocation(): Promise<HeartbeatLocation | null> 
   }
 
   try {
-    let permissions = await checkPermissions() as GeolocationPermissionsResponse;
-
-    if (
-      permissions.location === "prompt" ||
-      permissions.location === "prompt-with-rationale" ||
-      permissions.location === "prompt-with-rationale-required"
-    ) {
-      permissions = await requestPermissions(["location"]) as GeolocationPermissionsResponse;
-    }
-
-    if (permissions.location !== "granted") {
+    await logFrontendInfo("Requesting device location from native macOS bridge.");
+    const nativeLocation = await invoke<NativeHeartbeatLocation | null>("resolve_device_location");
+    if (!nativeLocation) {
       setLastLocationFailureAt(Date.now());
-      await logFrontendInfo(`Location permission not granted: ${permissions.location}`);
+      await logFrontendInfo("Location unavailable or permission not granted.");
       return cached;
     }
 
-    const position = await getCurrentPosition({
-      enableHighAccuracy: false,
-      timeout: 10_000,
-      maximumAge: LOCATION_TTL_MS,
-    });
-
     const resolved: HeartbeatLocation = {
-      lat: roundCoordinate(position.coords.latitude),
-      lng: roundCoordinate(position.coords.longitude),
-      capturedAt: Date.now(),
+      lat: roundCoordinate(nativeLocation.lat),
+      lng: roundCoordinate(nativeLocation.lng),
+      capturedAt: nativeLocation.capturedAt || Date.now(),
     };
 
+    await logFrontendInfo("Resolved device location from native macOS bridge.");
     setStoredLocation(resolved);
     clearLastLocationFailureAt();
     return resolved;
