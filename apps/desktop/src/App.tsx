@@ -5,6 +5,7 @@ import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { KNOWN_TOOLS, type ToolId } from "@vibe/shared-types";
 import { ToolCard } from "./components/ToolCard";
 import { Toggle } from "./components/Toggle";
+import { logFrontendError } from "./logging";
 
 const DETECTION_INTERVAL = 3 * 1000;
 const HEARTBEAT_INTERVAL = 5 * 60 * 1000;
@@ -66,8 +67,9 @@ export default function App() {
       );
       const sorted = sortDetectedTools(filtered);
       setTools((current) => (areToolsEqual(current, sorted) ? current : sorted));
-    } catch {
-      console.error("Failed to detect tools");
+    } catch (error) {
+      void logFrontendError("detect_tools", error);
+      console.error("Failed to detect tools", error);
     }
   }, []);
 
@@ -88,7 +90,11 @@ export default function App() {
       if (ok) {
         setLastHeartbeat(new Date(now));
       }
-    } catch {
+    } catch (error) {
+      void logFrontendError("send_heartbeat", error, {
+        anonId: anonId.current,
+        toolCount: toolsRef.current.length,
+      });
       setStatus("disconnected");
     }
   }, []);
@@ -142,6 +148,7 @@ export default function App() {
         setAutoStartError(null);
       })
       .catch((error) => {
+        void logFrontendError("autostart_status", error);
         const message =
           error instanceof Error ? error.message : "Unable to check startup status.";
         setAutoStartError(message);
@@ -160,6 +167,7 @@ export default function App() {
       const current = await isEnabled();
       setAutoStart(current);
     } catch (error) {
+      void logFrontendError("toggle_autostart", error, { enabled });
       const message =
         error instanceof Error ? error.message : "Failed to toggle startup mode.";
       setAutoStartError(message);
@@ -189,6 +197,7 @@ export default function App() {
     try {
       await getCurrentWindow().startDragging();
     } catch (error) {
+      void logFrontendError("window_drag", error);
       console.error("Failed to start window drag", error);
     }
   }, []);

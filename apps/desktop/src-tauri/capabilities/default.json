@@ -2,11 +2,14 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main-capability",
   "description": "Allows the main desktop window to use the default Tauri APIs and manage startup registration.",
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",
     "autostart:default",
-    "notification:default"
+    "notification:default",
+    "log:default"
   ]
 }

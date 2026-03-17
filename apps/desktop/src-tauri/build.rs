@@ -1,12 +1,16 @@
-use std::{env, fs, path::{Path, PathBuf}};
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+};
 
 const API_URL_KEY: &str = "VIBE_API_URL";
 
 fn main() {
-    let app_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").expect("missing CARGO_MANIFEST_DIR"))
-        .parent()
-        .expect("src-tauri should live under the desktop app directory")
-        .to_path_buf();
+    let app_dir =
+        PathBuf::from(env::var("CARGO_MANIFEST_DIR").expect("missing CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("src-tauri should live under the desktop app directory")
+            .to_path_buf();
 
     let profile = env::var("PROFILE").unwrap_or_else(|_| "debug".to_string());
     let env_files = env_file_chain(&profile);
@@ -21,9 +25,7 @@ fn main() {
         .filter(|value| !value.trim().is_empty())
         .or_else(|| resolve_from_env_files(&app_dir, &env_files, API_URL_KEY))
         .unwrap_or_else(|| {
-            panic!(
-                "{API_URL_KEY} must be set via the environment or one of the desktop .env files"
-            )
+            panic!("{API_URL_KEY} must be set via the environment or one of the desktop .env files")
         });
 
     println!("cargo:rustc-env={API_URL_KEY}={api_url}");
