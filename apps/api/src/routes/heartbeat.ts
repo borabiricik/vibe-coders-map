@@ -3,6 +3,10 @@ import ngeohash from "ngeohash";
 import type { Env } from "../types";
 import { validateHeartbeat } from "../middleware/validate";
 
+function redactAnonId(anonId: string): string {
+  return `${anonId.slice(0, 8)}...`;
+}
+
 const heartbeat = new Hono<{
   Bindings: Env;
   Variables: { anonId: string; validTools: string[]; heartbeatBody: Record<string, unknown> };
@@ -15,9 +19,26 @@ heartbeat.post("/", validateHeartbeat, async (c) => {
   const body = c.get("heartbeatBody");
   const useTestGeo = c.req.header("X-Test-Geo") === "1";
   const rateLimitKey = `heartbeat:${anonId}`;
+  const anonIdLog = redactAnonId(anonId);
+
+  console.log({
+    event: "heartbeat.received",
+    anon_id: anonIdLog,
+    tools,
+    tool_count: tools.length,
+    colo: cf?.colo ?? null,
+    city: cf?.city ?? null,
+    country: cf?.country ?? null,
+    uses_test_geo: useTestGeo,
+  });
 
   const { success } = await c.env.HEARTBEAT_RATE_LIMITER.limit({ key: rateLimitKey });
   if (!success) {
+    console.warn({
+      event: "heartbeat.rate_limited",
+      anon_id: anonIdLog,
+      retry_after_seconds: 60,
+    });
     c.header("Retry-After", "60");
     return c.json(
       {
@@ -78,6 +99,16 @@ heartbeat.post("/", validateHeartbeat, async (c) => {
       now,
     )
     .run();
+
+  console.log({
+    event: "heartbeat.persisted",
+    anon_id: anonIdLog,
+    geohash,
+    lat: roundedLat,
+    lng: roundedLng,
+    country: country,
+    region_code: regionCode,
+  });
 
   return c.body(null, 204);
 });

@@ -2,6 +2,10 @@ name = "vibe-coders-map-api"
 main = "src/index.ts"
 compatibility_date = "2026-03-01"
 
+[observability]
+enabled = true
+head_sampling_rate = 1
+
 [[d1_databases]]
 binding = "DB"
 database_name = "vibe-coders-db"
