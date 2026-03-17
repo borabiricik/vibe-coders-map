@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import ngeohash from "ngeohash";
 import type { Env } from "../types";
+import { resolveRegionFromCoordinates } from "../lib/admin1-lookup";
 import { validateHeartbeat } from "../middleware/validate";
 
 function redactAnonId(anonId: string): string {
@@ -17,7 +18,13 @@ heartbeat.post("/", validateHeartbeat, async (c) => {
   const tools: string[] = c.get("validTools");
   const cf = c.req.raw.cf;
   const body = c.get("heartbeatBody");
+  const typedBody = body as Record<string, unknown>;
   const useTestGeo = c.req.header("X-Test-Geo") === "1";
+  const hasClientCoordinates =
+    typeof typedBody.lat === "number" &&
+    Number.isFinite(typedBody.lat) &&
+    typeof typedBody.lng === "number" &&
+    Number.isFinite(typedBody.lng);
   const rateLimitKey = `heartbeat:${anonId}`;
   const anonIdLog = redactAnonId(anonId);
 
@@ -30,6 +37,7 @@ heartbeat.post("/", validateHeartbeat, async (c) => {
     city: cf?.city ?? null,
     country: cf?.country ?? null,
     uses_test_geo: useTestGeo,
+    uses_client_coordinates: hasClientCoordinates,
   });
 
   const { success } = await c.env.HEARTBEAT_RATE_LIMITER.limit({ key: rateLimitKey });
@@ -54,6 +62,7 @@ heartbeat.post("/", validateHeartbeat, async (c) => {
   let city: string | null;
   let country: string | null;
   let regionCode: string | null;
+  let locationSource: "test" | "client" | "cloudflare";
 
   if (useTestGeo && body && typeof body === "object" && "lat" in body && "lng" in body) {
     lat = Number(body.lat) || 0;
@@ -61,12 +70,23 @@ heartbeat.post("/", validateHeartbeat, async (c) => {
     city = typeof body.city === "string" ? body.city : null;
     country = typeof body.country === "string" ? body.country : null;
     regionCode = typeof body.region_code === "string" ? body.region_code : null;
+    locationSource = "test";
+  } else if (hasClientCoordinates) {
+    lat = typedBody.lat as number;
+    lng = typedBody.lng as number;
+
+    const resolvedRegion = resolveRegionFromCoordinates(lat, lng);
+    city = null;
+    country = resolvedRegion?.countryCode ?? ((cf?.country as string) || null);
+    regionCode = resolvedRegion?.regionCode ?? null;
+    locationSource = "client";
   } else {
     lat = cf?.latitude ? parseFloat(cf.latitude as string) : 0;
     lng = cf?.longitude ? parseFloat(cf.longitude as string) : 0;
     city = (cf?.city as string) || null;
     country = (cf?.country as string) || null;
     regionCode = (cf?.regionCode as string) || null;
+    locationSource = "cloudflare";
   }
 
   const geohash = ngeohash.encode(lat, lng, 6);
@@ -108,6 +128,7 @@ heartbeat.post("/", validateHeartbeat, async (c) => {
     lng: roundedLng,
     country: country,
     region_code: regionCode,
+    location_source: locationSource,
   });
 
   return c.body(null, 204);

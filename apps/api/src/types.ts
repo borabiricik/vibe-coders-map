@@ -12,6 +12,7 @@ export interface HeartbeatRow {
   lng: number;
   city: string | null;
   country_code: string | null;
+  region_code: string | null;
   geohash: string;
   created_at: number;
 }

@@ -76,10 +76,15 @@ fn detect_tools() -> Vec<String> {
 }
 
 #[tauri::command]
-async fn send_heartbeat(anon_id: String, tools: Vec<String>) -> Result<bool, String> {
+async fn send_heartbeat(
+    anon_id: String,
+    tools: Vec<String>,
+    lat: Option<f64>,
+    lng: Option<f64>,
+) -> Result<bool, String> {
     let client = reqwest::Client::new();
     let anon_id_log = redact_anon_id(&anon_id);
-    let payload = serde_json::json!({
+    let mut payload = serde_json::json!({
         "anon_id": anon_id,
         "tools": tools,
         "ts": std::time::SystemTime::now()
@@ -87,12 +92,22 @@ async fn send_heartbeat(anon_id: String, tools: Vec<String>) -> Result<bool, Str
             .unwrap_or_default()
             .as_secs()
     });
+
+    if let Some(lat) = lat {
+        payload["lat"] = serde_json::json!(lat);
+    }
+
+    if let Some(lng) = lng {
+        payload["lng"] = serde_json::json!(lng);
+    }
+
     let heartbeat_url = format!("{}/api/v1/heartbeat", api_url());
 
     info!(
         target: "heartbeat",
-        "Sending heartbeat to {heartbeat_url} for {anon_id_log} with {} detected tools",
-        payload["tools"].as_array().map_or(0, |values| values.len())
+        "Sending heartbeat to {heartbeat_url} for {anon_id_log} with {} detected tools (client_coordinates={})",
+        payload["tools"].as_array().map_or(0, |values| values.len()),
+        payload.get("lat").is_some() && payload.get("lng").is_some(),
     );
 
     match client.post(&heartbeat_url).json(&payload).send().await {
@@ -132,6 +147,7 @@ fn show_main_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_geolocation::init())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(LevelFilter::Info)

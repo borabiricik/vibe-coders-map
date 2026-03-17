@@ -124,7 +124,7 @@ describe("pipeline", () => {
       lng: 28.97,
       city: "Istanbul",
       country: "TR",
-      region_code: "TR-34",
+      region_code: "34",
     };
 
     for (let i = 0; i < 10; i++) {
@@ -155,5 +155,32 @@ describe("pipeline", () => {
     const error = await limited.json<{ error: string; retry_after_seconds: number }>();
     expect(error.error).toBe("Heartbeat rate limit exceeded");
     expect(error.retry_after_seconds).toBe(60);
+  });
+
+  it("derives region code from client coordinates without test geo headers", async () => {
+    const anonId = randomUUID();
+    const response = await SELF.fetch("https://example.com/api/v1/heartbeat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        anon_id: anonId,
+        tools: [KNOWN_TOOLS[0]],
+        lat: 40.1885,
+        lng: 29.061,
+      }),
+    });
+
+    expect(response.status).toBe(204);
+
+    const choroplethRes = await SELF.fetch("https://example.com/api/v1/choropleth");
+    expect(choroplethRes.status).toBe(200);
+
+    const data = await choroplethRes.json() as ChoroplethResponse;
+    expect(data.regions["TR-16"]).toMatchObject({
+      count: expect.any(Number),
+      dominantTool: expect.any(String),
+    });
   });
 });

@@ -15,6 +15,8 @@ export interface HeartbeatPayload {
   anon_id: string
   tools: ToolId[]
   ts: number
+  lat?: number
+  lng?: number
 }
 
 export interface ClusterPoint {

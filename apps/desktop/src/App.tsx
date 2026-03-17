@@ -5,6 +5,7 @@ import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { KNOWN_TOOLS, type ToolId } from "@vibe/shared-types";
 import { ToolCard } from "./components/ToolCard";
 import { Toggle } from "./components/Toggle";
+import { getHeartbeatLocation } from "./location";
 import { logFrontendError } from "./logging";
 
 const DETECTION_INTERVAL = 3 * 1000;
@@ -81,10 +82,14 @@ export default function App() {
     localStorage.setItem(LAST_HEARTBEAT_ATTEMPT_AT_KEY, now.toString());
 
     setStatus("sending");
+    let location: Awaited<ReturnType<typeof getHeartbeatLocation>> = null;
     try {
+      location = await getHeartbeatLocation();
       const ok = await invoke<boolean>("send_heartbeat", {
         anonId: anonId.current,
         tools: toolsRef.current,
+        lat: location?.lat,
+        lng: location?.lng,
       });
       setStatus(ok ? "connected" : "disconnected");
       if (ok) {
@@ -94,6 +99,7 @@ export default function App() {
       void logFrontendError("send_heartbeat", error, {
         anonId: anonId.current,
         toolCount: toolsRef.current.length,
+        hasLocation: location !== null,
       });
       setStatus("disconnected");
     }
