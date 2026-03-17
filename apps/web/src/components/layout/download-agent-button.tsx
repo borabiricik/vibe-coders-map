@@ -19,7 +19,6 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { ActivityIcon } from "@/components/ui/activity";
 import { DownloadIcon } from "@/components/ui/download";
 import { LinkIcon } from "@/components/ui/link";
-import { XIcon } from "@/components/ui/x";
 
 type AnimatedIconHandle = {
   startAnimation: () => void;
