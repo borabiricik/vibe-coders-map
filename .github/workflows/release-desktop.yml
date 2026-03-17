@@ -46,13 +46,43 @@ jobs:
 
       - name: Write App Store Connect API key
         shell: bash
+        env:
+          APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
         run: |
-          if [ -z "${{ secrets.APPLE_API_KEY_ID }}" ] || [ -z "${{ secrets.APPLE_API_ISSUER_ID }}" ] || [ -z "${{ secrets.APPLE_API_PRIVATE_KEY }}" ]; then
+          set -euo pipefail
+          if [ -z "${{ secrets.APPLE_API_KEY_ID }}" ] || [ -z "${{ secrets.APPLE_API_ISSUER_ID }}" ] || [ -z "${APPLE_API_PRIVATE_KEY}" ]; then
             echo "Missing App Store Connect notarization secrets"
             exit 1
           fi
-          mkdir -p "${{ github.workspace }}/.appstoreconnect/private_keys"
-          printf '%s\n' "${{ secrets.APPLE_API_PRIVATE_KEY }}" > "${{ github.workspace }}/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8"
+          export APPLE_API_KEY_FILE="${HOME}/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8"
+          mkdir -p "${HOME}/.appstoreconnect/private_keys"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          raw_key = os.environ["APPLE_API_PRIVATE_KEY"]
+          if "\\n" in raw_key and "\n" not in raw_key:
+              raw_key = raw_key.replace("\\n", "\n")
+
+          if "-----BEGIN PRIVATE KEY-----" not in raw_key or "-----END PRIVATE KEY-----" not in raw_key:
+              raise SystemExit("APPLE_API_PRIVATE_KEY does not look like a valid App Store Connect .p8 key")
+
+          key_path = Path(os.environ["APPLE_API_KEY_FILE"])
+          key_path.write_text(raw_key if raw_key.endswith("\n") else f"{raw_key}\n", encoding="utf-8")
+          PY
+          echo "APPLE_API_KEY_PATH=${APPLE_API_KEY_FILE}" >> "${GITHUB_ENV}"
+          chmod 600 "${APPLE_API_KEY_FILE}"
+          openssl pkey -in "${APPLE_API_KEY_FILE}" -inform PEM -noout >/dev/null
+
+      - name: Validate notarization authentication
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun notarytool history \
+            --key "${APPLE_API_KEY_PATH}" \
+            --key-id "${{ secrets.APPLE_API_KEY_ID }}" \
+            --issuer "${{ secrets.APPLE_API_ISSUER_ID }}" \
+            --output-format json >/dev/null
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
@@ -64,7 +94,6 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER_ID }}
-          APPLE_API_KEY_PATH: ${{ github.workspace }}/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Vibe Coders Map ${{ github.ref_name }}"
@@ -72,4 +101,4 @@ jobs:
           releaseDraft: true
           prerelease: false
           projectPath: apps/desktop
-          args: ${{ matrix.args }}
+          args: ${{ matrix.args }} --verbose
