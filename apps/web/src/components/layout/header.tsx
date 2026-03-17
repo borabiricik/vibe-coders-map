@@ -1,3 +1,5 @@
+import { DownloadAgentButton } from "@/components/layout/download-agent-button";
+
 export function Header() {
   return (
     <header className="relative z-20 flex h-14 items-center justify-between border-b border-gray-800/50 bg-gray-900/60 px-4 backdrop-blur-md">
@@ -14,14 +16,7 @@ export function Header() {
         </span>
       </div>
 
-      <a
-        href="https://github.com/vibecodersmap/releases"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="rounded-full border border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:border-gray-500 hover:text-white"
-      >
-        Download Agent
-      </a>
+      <DownloadAgentButton />
     </header>
   );
 }
