@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   title: "Vibe Coders Map - See Who's Vibe Coding Right Now",
   description:
     "A live global map showing developers using AI coding tools like Cursor, Claude Code, Windsurf, and more.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
   openGraph: {
     title: "Vibe Coders Map",
     description: "See who's vibe coding around the world, right now.",

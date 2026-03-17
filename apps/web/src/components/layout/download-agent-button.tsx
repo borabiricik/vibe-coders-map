@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   Button,
   Card,
@@ -85,7 +86,6 @@ export function DownloadAgentButton() {
     null,
   );
   const triggerIconRef = useRef<AnimatedIconHandle | null>(null);
-  const closeIconRef = useRef<AnimatedIconHandle | null>(null);
   const errorLinkIconRef = useRef<AnimatedIconHandle | null>(null);
   const downloadIconRefs = useRef<Record<string, AnimatedIconHandle | null>>(
     {},
@@ -156,9 +156,6 @@ export function DownloadAgentButton() {
         size="sm"
         radius="full"
         variant="bordered"
-        startContent={
-          <DownloadIcon ref={triggerIconRef} size={16} className="shrink-0" />
-        }
         onPress={() => {
           console.info("[DownloadAgentButton] open requested", {
             source: "press",
@@ -168,6 +165,7 @@ export function DownloadAgentButton() {
         {...getAnimatedIconHandlers(triggerIconRef)}
         className="h-9 border-white/12 bg-slate-900/70 px-4 text-sm font-medium text-slate-100 shadow-lg shadow-black/10 backdrop-blur transition-all hover:border-cyan-400/35 hover:bg-slate-900 active:scale-[0.98]"
       >
+        <DownloadIcon ref={triggerIconRef} size={16} className="shrink-0" />
         Download Agent
       </Button>
 
@@ -236,11 +234,10 @@ export function DownloadAgentButton() {
                     });
                     onClose();
                   }}
-                  {...getAnimatedIconHandlers(closeIconRef)}
                   className="mt-1 h-10 min-h-0 w-10 min-w-0 text-slate-500 hover:bg-white/5 hover:text-white"
                   aria-label="Close download modal"
                 >
-                  <XIcon ref={closeIconRef} size={14} className="shrink-0" />
+                  x
                 </Button>
               </ModalHeader>
 
@@ -365,12 +362,24 @@ export function DownloadAgentButton() {
                             })}
                             className="h-auto w-full justify-between rounded-2xl border border-white/8 bg-white/[0.04] px-5 py-4 text-left transition-all hover:border-cyan-400/25 hover:bg-white/[0.06]"
                           >
-                            <span className="flex min-w-0 flex-col items-start">
-                              <span className="text-lg font-semibold tracking-[-0.03em] text-white">
-                                {download.label}
+                            <span className="flex min-w-0 items-center gap-4">
+                              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] shadow-inner shadow-white/5">
+                                <Image
+                                  src="/logo.png"
+                                  alt="Vibe Coders desktop app icon"
+                                  width={32}
+                                  height={32}
+                                  className="h-8 w-8 object-contain"
+                                />
                               </span>
-                              <span className="mt-1 text-sm text-slate-400">
-                                {download.name} • {formatFileSize(download.size)}
+
+                              <span className="flex min-w-0 flex-col items-start">
+                                <span className="text-lg font-semibold tracking-[-0.03em] text-white">
+                                  {download.label}
+                                </span>
+                                <span className="mt-1 text-sm text-slate-400">
+                                  {download.name} • {formatFileSize(download.size)}
+                                </span>
                               </span>
                             </span>
                             <span className="inline-flex h-9 shrink-0 items-center rounded-full bg-cyan-400 px-4 text-sm font-medium text-slate-950 shadow-md shadow-cyan-950/20">

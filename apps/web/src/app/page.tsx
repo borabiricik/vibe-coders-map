@@ -10,7 +10,7 @@ export default function Home() {
       <main className="relative flex-1">
         <VibeMap />
         {/* Desktop: top-right, Mobile: bottom */}
-        <div className="absolute inset-x-0 bottom-0 z-10 p-4 md:inset-x-auto md:bottom-auto md:right-0 md:top-0 md:max-w-[280px]">
+        <div className="absolute inset-x-0 bottom-0 z-10 p-4 md:inset-x-auto md:bottom-auto md:right-0 md:top-20 md:max-w-[280px]">
           <div className="flex flex-col items-stretch gap-3">
             <div className="pointer-events-auto">
               <GlobalStats />

@@ -1,52 +1,51 @@
-import { Chip, Navbar, NavbarBrand, NavbarContent } from "@heroui/react";
+import Image from "next/image";
+import { Chip } from "@heroui/react";
 import { DownloadAgentButton } from "@/components/layout/download-agent-button";
 import { ActivityIcon } from "@/components/ui/activity";
 
 export function Header() {
   return (
-    <Navbar
-      position="static"
-      maxWidth="full"
-      height="3.5rem"
-      isBordered
-      isBlurred
-      classNames={{
-        base: "z-20 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl supports-[backdrop-filter]:bg-slate-950/60",
-        wrapper: "h-14 max-w-full px-4 md:px-5",
-        brand: "grow-0 gap-3",
-        content: "basis-auto",
-      }}
-    >
-      <NavbarBrand className="gap-3">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-success/20 bg-success/10 text-success">
-          <ActivityIcon size={14} className="shrink-0" />
-        </span>
+    <header className="pointer-events-none fixed inset-x-0 top-4 z-20 px-4 sm:top-5 sm:px-6">
+      <div className="pointer-events-auto mx-auto flex w-full max-w-5xl items-center justify-between gap-3 rounded-full border border-white/12 bg-slate-950/68 px-3 py-2 shadow-[0_20px_60px_rgba(2,6,23,0.5)] backdrop-blur-2xl supports-[backdrop-filter]:bg-slate-950/58">
+        <div className="flex min-w-0 items-center gap-3 rounded-full pl-1">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] shadow-inner shadow-white/10">
+            <Image
+              src="/logo.png"
+              alt="Vibe Coders desktop app icon"
+              width={28}
+              height={28}
+              className="h-8 w-8 object-cover"
+              priority
+            />
+          </span>
 
-        <div className="flex items-center gap-2.5">
-          <h1 className="text-base font-semibold tracking-tight text-white">
-            Vibe Coders Map
-          </h1>
-          <Chip
-            size="sm"
-            radius="full"
-            variant="flat"
-            color="success"
-            classNames={{
-              base: "h-7 min-h-0 border border-success/25 bg-success/15 px-2",
-              content: "text-[10px] font-semibold uppercase tracking-[0.14em] text-success",
-            }}
-          >
-            <span className="flex items-center gap-1.5">
-              <ActivityIcon size={12} className="shrink-0" />
-              <span>Live</span>
-            </span>
-          </Chip>
+          <div className="flex min-w-0 items-center gap-2.5">
+            <h1 className="truncate text-sm font-semibold tracking-[-0.03em] text-white sm:text-base">
+              Vibe Coders Map
+            </h1>
+            <Chip
+              size="sm"
+              radius="full"
+              variant="flat"
+              color="success"
+              classNames={{
+                base: "hidden h-7 min-h-0 border border-emerald-400/25 bg-emerald-400/12 px-2.5 sm:inline-flex",
+                content:
+                  "text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-300",
+              }}
+            >
+              <span className="flex items-center gap-1.5">
+                <ActivityIcon size={12} className="shrink-0" />
+                <span>Live</span>
+              </span>
+            </Chip>
+          </div>
         </div>
-      </NavbarBrand>
 
-      <NavbarContent as="div" justify="end" className="pointer-events-auto">
-        <DownloadAgentButton />
-      </NavbarContent>
-    </Navbar>
+        <div className="shrink-0">
+          <DownloadAgentButton />
+        </div>
+      </div>
+    </header>
   );
 }
