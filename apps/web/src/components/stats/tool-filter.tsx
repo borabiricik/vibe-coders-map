@@ -1,16 +1,20 @@
 "use client";
 
 import { useMemo } from "react";
+import { Button, Card, CardBody, CardHeader, ScrollShadow } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { KNOWN_TOOLS, getToolBranding } from "@vibe/shared-types";
 import { useMapStore } from "@/hooks/use-map-viewport";
 import { fetchStats } from "@/lib/api";
+import { withAlpha } from "@/lib/color";
+import { SlidersHorizontalIcon } from "@/components/ui/sliders-horizontal";
 import { ToolLogoBadge } from "./tool-logo-badge";
 
 export function ToolFilter() {
   const activeFilters = useMapStore((s) => s.activeFilters);
   const toggleFilter = useMapStore((s) => s.toggleFilter);
   const clearFilters = useMapStore((s) => s.clearFilters);
+  const isAllActive = activeFilters.length === 0;
 
   const { data } = useQuery({
     queryKey: ["stats"],
@@ -30,42 +34,92 @@ export function ToolFilter() {
   }, [data?.by_tool]);
 
   return (
-    <div className="rounded-xl border border-gray-700/50 bg-gray-900/80 p-3 backdrop-blur-lg">
-      <div className="mb-2 flex items-center justify-between">
-        <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
-          Filter by Tool
-        </p>
-        {activeFilters.length > 0 && (
-          <button
-            onClick={clearFilters}
-            className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+    <Card className="border border-white/10 bg-slate-950/72 shadow-2xl shadow-black/20 backdrop-blur-xl">
+      <CardHeader className="items-start justify-between gap-3 pb-2">
+        <div>
+          <div className="flex items-center gap-2">
+            <SlidersHorizontalIcon
+              size={14}
+              className="shrink-0 text-cyan-300"
+            />
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+              Filter by Tool
+            </p>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            {isAllActive
+              ? "Showing all toolchains"
+              : `${activeFilters.length} selected`}
+          </p>
+        </div>
+
+        {!isAllActive ? (
+          <Button
+            size="sm"
+            radius="full"
+            variant="light"
+            onPress={clearFilters}
+            className="text-slate-300"
           >
             Clear
-          </button>
-        )}
-      </div>
-      <div className="flex flex-wrap gap-1.5">
-        {sortedTools.map((tool) => {
-          const isActive = activeFilters.includes(tool);
-          const { color, label } = getToolBranding(tool);
-          return (
-            <button
-              key={tool}
-              onClick={() => toggleFilter(tool)}
-              className="flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium transition-all"
-              style={{
-                backgroundColor: isActive ? `${color}22` : "transparent",
-                borderWidth: 1,
-                borderColor: isActive ? `${color}66` : "rgba(75,85,99,0.5)",
-                color: isActive ? color : "#9CA3AF",
-              }}
+          </Button>
+        ) : null}
+      </CardHeader>
+
+      <CardBody className="pt-0">
+        <ScrollShadow
+          className="max-h-[220px] overflow-y-auto pr-1 md:max-h-none md:overflow-visible md:pr-0"
+        >
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              radius="full"
+              variant={isAllActive ? "flat" : "bordered"}
+              onPress={clearFilters}
+              className="justify-start border-white/10 px-3 text-xs font-medium text-slate-300 transition-transform data-[hover=true]:scale-[1.02]"
+              style={
+                isAllActive
+                  ? {
+                      backgroundColor: "rgba(34, 211, 238, 0.16)",
+                      borderColor: "rgba(34, 211, 238, 0.4)",
+                      color: "#22D3EE",
+                    }
+                  : undefined
+              }
             >
-              <ToolLogoBadge tool={tool} size="sm" />
-              {label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
+              All
+            </Button>
+
+            {sortedTools.map((tool) => {
+              const isActive = activeFilters.includes(tool);
+              const { color, label } = getToolBranding(tool);
+
+              return (
+                <Button
+                  key={tool}
+                  size="sm"
+                  radius="full"
+                  variant={isActive ? "flat" : "bordered"}
+                  startContent={<ToolLogoBadge tool={tool} size="sm" />}
+                  onPress={() => toggleFilter(tool)}
+                  className="justify-start border-white/10 bg-white/[0.02] px-3 text-xs font-medium text-slate-300 transition-transform data-[hover=true]:scale-[1.02]"
+                  style={
+                    isActive
+                      ? {
+                          backgroundColor: withAlpha(color, 0.16),
+                          borderColor: withAlpha(color, 0.4),
+                          color,
+                        }
+                      : undefined
+                  }
+                >
+                  {label}
+                </Button>
+              );
+            })}
+          </div>
+        </ScrollShadow>
+      </CardBody>
+    </Card>
   );
 }

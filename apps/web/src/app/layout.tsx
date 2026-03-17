@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "Vibe Coders Map - See Who's Vibe Coding Right Now",
@@ -19,14 +23,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className={cn("dark", "font-sans", geist.variable)} suppressHydrationWarning>
       <head>
         <link
           href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css"
           rel="stylesheet"
         />
       </head>
-      <body className="bg-gray-950 text-white antialiased">
+      <body className="min-h-screen bg-background text-foreground antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

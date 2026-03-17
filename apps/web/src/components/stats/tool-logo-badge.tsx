@@ -1,7 +1,7 @@
 "use client";
 
+import { Avatar } from "@heroui/react";
 import { getToolBranding, type ToolLogoSurface } from "@vibe/shared-types";
-import Image from "next/image"
 
 interface ToolLogoBadgeProps {
   tool: string;
@@ -32,31 +32,34 @@ export function ToolLogoBadge({ tool, size = "sm" }: ToolLogoBadgeProps) {
   const styles = SIZE_STYLES[size];
 
   return (
-    <span
-      className={`flex shrink-0 items-center justify-center overflow-hidden ${styles.container}`}
-      style={{
-        backgroundColor: SURFACE_BACKGROUNDS[logoSurface],
-        borderColor: `${color}33`,
+    <Avatar
+      src={localLogoPath || undefined}
+      name={label}
+      showFallback
+      radius="sm"
+      className={`shrink-0 border ${styles.container}`}
+      classNames={{
+        base: "bg-transparent",
+        img: "object-contain p-0.5",
+        fallback: "bg-transparent",
       }}
-      aria-hidden="true"
-    >
-      {localLogoPath ? (
-        <Image
-          width={32}
-          height={32}
-          src={localLogoPath}
-          alt={`${label} logo`}
-          className={`${styles.image} h-full w-full object-contain p-0.5`}
-          loading="lazy"
-        />
-      ) : (
+      fallback={
         <span
           className={`font-semibold uppercase ${styles.fallback}`}
           style={{ color }}
         >
           {label.charAt(0)}
         </span>
-      )}
-    </span>
+      }
+      imgProps={{
+        alt: `${label} logo`,
+        loading: "lazy",
+      }}
+      style={{
+        backgroundColor: SURFACE_BACKGROUNDS[logoSurface],
+        borderColor: `${color}33`,
+      }}
+      aria-hidden="true"
+    />
   );
 }
